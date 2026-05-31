@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import asyncio
 import json
-from backend.pipeline import run_research_pipeline_stream
+from pipeline import run_research_pipeline_stream
 app = FastAPI(
     title="Multi-Agent Research API",
     description="AI-powered research pipeline using LangChain agents",

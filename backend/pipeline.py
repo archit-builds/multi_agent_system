@@ -5,7 +5,7 @@ Yields SSE-compatible dicts so FastAPI can stream them to the client.
 
 import asyncio
 from typing import AsyncGenerator
-from .agents import build_search_agent, build_reader_agent, writer_chain, critic_chain
+from backend.agents import build_search_agent, build_reader_agent, writer_chain, critic_chain
 
 
 async def run_research_pipeline_stream(topic: str) -> AsyncGenerator[dict, None]:

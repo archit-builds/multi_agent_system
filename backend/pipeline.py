@@ -20,6 +20,7 @@ async def run_research_pipeline_stream(topic: str) -> AsyncGenerator[dict, None]
     yield {"step": "status", "data": "search_started", "message": "🔍 Search agent is gathering information..."}
 
     search_agent = build_search_agent()
+    print(f"--> Starting search for: {topic}", flush=True)
     search_result = await loop.run_in_executor(
         None,
         lambda: search_agent.invoke({
@@ -27,6 +28,7 @@ async def run_research_pipeline_stream(topic: str) -> AsyncGenerator[dict, None]
         })
     )
     state["search_results"] = search_result["messages"][-1].content
+    print("RAW SEARCH RESULT:", state["search_results"][:500], flush=True)
 
     yield {"step": "search_results", "data": state["search_results"], "message": "✅ Search complete"}
 
@@ -40,11 +42,12 @@ async def run_research_pipeline_stream(topic: str) -> AsyncGenerator[dict, None]
             "messages": [("user",
                 f"Based on the following search results about '{topic}', "
                 f"pick the most relevant URL and scrape it for deeper content.\n\n"
-                f"Search Results:\n{state['search_results'][:800]}"
+                f"Search Results:\n{state['search_results']}"
             )]
         })
     )
     state["scraped_content"] = reader_result["messages"][-1].content
+    print("RAW SEARCH RESULT:", state["search_results"][:500])
 
     yield {"step": "scraped_content", "data": state["scraped_content"], "message": "✅ Content scraped"}
 

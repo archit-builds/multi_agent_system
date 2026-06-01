@@ -30,7 +30,7 @@ def build_reader_agent():
     return create_agent(
         model=llm,
         tools=[scrape_webpage],
-        system_prompt="You are a reading agent. Use the scrape_webpage tool to extract content from the given URL. Return the scraped text and do not call the tool repeatedly once you have the content."
+        system_prompt="You are a reading agent. Use the scrape_webpage tool to extract content from the given URL. Return the scraped text and do not call the tool repeatedly once you have the content. VERY IMPORTANT: Carefully extract the URL from the search results exactly as it is written. Do not include trailing parentheses, quotes, or punctuation inside the URL."
     )
 
 #writer chain 

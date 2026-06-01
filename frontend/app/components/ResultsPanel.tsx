@@ -1,36 +1,49 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { ResearchState } from '../hooks/useResearch'
+import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { ResearchState } from "../hooks/useResearch";
 
 interface ResultsPanelProps {
-  state: ResearchState
+  state: ResearchState;
 }
 
-type TabId = 'report' | 'critique' | 'sources'
+type TabId = "report" | "critique" | "sources";
 
 interface Tab {
-  id: TabId
-  label: string
-  icon: string
-  available: (s: ResearchState) => boolean
+  id: TabId;
+  label: string;
+  icon: string;
+  available: (s: ResearchState) => boolean;
 }
 
 const TABS: Tab[] = [
-  { id: 'report',   label: 'Report',   icon: '◇', available: (s) => !!s.report },
-  { id: 'critique', label: 'Critique', icon: '◈', available: (s) => !!s.feedback },
-  { id: 'sources',  label: 'Sources',  icon: '◎', available: (s) => !!s.search_results },
-]
+  { id: "report", label: "Report", icon: "◇", available: (s) => !!s.report },
+  {
+    id: "critique",
+    label: "Critique",
+    icon: "◈",
+    available: (s) => !!s.feedback,
+  },
+  {
+    id: "sources",
+    label: "Sources",
+    icon: "◎",
+    available: (s) => !!s.search_results,
+  },
+];
 
 function ScoreBadge({ text }: { text: string }) {
-  const match = text.match(/Score:\s*(\d+)\/10/)
-  if (!match) return null
-  const score = parseInt(match[1])
-  const color = score >= 8 ? '#3d6b3d' : score >= 6 ? '#c07c2a' : '#c0392b'
+  const match = text.match(/Score:\s*(\d+)\/10/);
+  if (!match) return null;
+  const score = parseInt(match[1]);
+  const color = score >= 8 ? "#3d6b3d" : score >= 6 ? "#c07c2a" : "#c0392b";
   return (
-    <div className="score-badge" style={{ '--score-color': color } as React.CSSProperties}>
+    <div
+      className="score-badge"
+      style={{ "--score-color": color } as React.CSSProperties}
+    >
       <span className="score-num">{score}</span>
       <span className="score-denom">/10</span>
       <style jsx>{`
@@ -40,7 +53,8 @@ function ScoreBadge({ text }: { text: string }) {
           gap: 1px;
           padding: 6px 16px;
           background: color-mix(in srgb, var(--score-color) 10%, transparent);
-          border: 1px solid color-mix(in srgb, var(--score-color) 30%, transparent);
+          border: 1px solid
+            color-mix(in srgb, var(--score-color) 30%, transparent);
           border-radius: 100px;
           margin-bottom: 1.5rem;
         }
@@ -57,30 +71,45 @@ function ScoreBadge({ text }: { text: string }) {
         }
       `}</style>
     </div>
-  )
+  );
 }
 
 function ShimmerBlock() {
   return (
     <div className="shimmer-block">
       {[100, 80, 95, 70, 88, 60].map((w, i) => (
-        <div key={i} className="shimmer-line" style={{ width: `${w}%`, height: 14, marginBottom: 10 }} />
+        <div
+          key={i}
+          className="shimmer-line"
+          style={{ width: `${w}%`, height: 14, marginBottom: 10 }}
+        />
       ))}
       <style jsx>{`
-        .shimmer-block { padding: 0.5rem 0; }
+        .shimmer-block {
+          padding: 0.5rem 0;
+        }
         .shimmer-line {
-          background: linear-gradient(90deg, var(--bg-surface) 25%, var(--border) 50%, var(--bg-surface) 75%);
+          background: linear-gradient(
+            90deg,
+            var(--bg-surface) 25%,
+            var(--border) 50%,
+            var(--bg-surface) 75%
+          );
           background-size: 800px 100%;
           animation: shimmer 1.8s ease-in-out infinite;
           border-radius: 4px;
         }
         @keyframes shimmer {
-          0%   { background-position: -400px 0; }
-          100% { background-position: 400px 0; }
+          0% {
+            background-position: -400px 0;
+          }
+          100% {
+            background-position: 400px 0;
+          }
         }
       `}</style>
     </div>
-  )
+  );
 }
 
 function CritiqueView({ text }: { text: string }) {
@@ -91,39 +120,60 @@ function CritiqueView({ text }: { text: string }) {
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
       </div>
       <style jsx>{`
-        .critique-view { display: flex; flex-direction: column; }
+        .critique-view {
+          display: flex;
+          flex-direction: column;
+        }
       `}</style>
     </div>
-  )
+  );
 }
 
 function SourcesView({ raw }: { raw: string }) {
   // Extract URLs from raw text
-  const urlRegex = /https?:\/\/[^\s"'<>)\]]+/g
-  const urls = Array.from(new Set(raw.match(urlRegex) || []))
+  const urlRegex = /https?:\/\/[^\s"'<>)\]]+/g;
+  const urls = Array.from(new Set(raw.match(urlRegex) || []));
 
   if (!urls.length) {
-    return <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>No URLs extracted from search results.</p>
+    return (
+      <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
+        No URLs extracted from search results.
+      </p>
+    );
   }
 
   return (
     <div className="sources-list">
       {urls.map((url, i) => {
-        let host = ''
-        try { host = new URL(url).hostname.replace('www.', '') } catch {}
+        let host = "";
+        try {
+          host = new URL(url).hostname.replace("www.", "");
+        } catch {}
         return (
-          <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="source-item">
-            <span className="source-index">{String(i + 1).padStart(2, '0')}</span>
+          <a
+            key={i}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="source-item"
+          >
+            <span className="source-index">
+              {String(i + 1).padStart(2, "0")}
+            </span>
             <div className="source-detail">
               <span className="source-host">{host}</span>
               <span className="source-url">{url}</span>
             </div>
             <span className="source-arrow">↗</span>
           </a>
-        )
+        );
       })}
       <style jsx>{`
-        .sources-list { display: flex; flex-direction: column; gap: 8px; }
+        .sources-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
         .source-item {
           display: flex;
           align-items: center;
@@ -172,35 +222,40 @@ function SourcesView({ raw }: { raw: string }) {
         }
       `}</style>
     </div>
-  )
+  );
 }
 
 export default function ResultsPanel({ state }: ResultsPanelProps) {
-  const [activeTab, setActiveTab] = useState<TabId>('report')
+  const [activeTab, setActiveTab] = useState<TabId>("report");
 
-  const hasAnyContent = state.report || state.feedback || state.search_results
-  const isWriting = state.status === 'writing_started'
-  const isCritiquing = state.status === 'critiquing_started'
-  const isSearching = ['search_started', 'reading_started'].includes(state.status)
+  const hasAnyContent = state.report || state.feedback || state.search_results;
+  const isWriting = state.status === "writing_started";
+  const isCritiquing = state.status === "critiquing_started";
+  const isSearching = ["search_started", "reading_started"].includes(
+    state.status,
+  );
 
-  if (!hasAnyContent && !isSearching && !isWriting && !isCritiquing) return null
+  if (!hasAnyContent && !isSearching && !isWriting && !isCritiquing)
+    return null;
 
   return (
     <div className="results-panel">
       {/* Tab bar */}
       <div className="tab-bar" role="tablist">
         {TABS.map((tab) => {
-          const available = tab.available(state)
+          const available = tab.available(state);
           const isLoading =
-            (!available && tab.id === 'report' && (isWriting || isCritiquing)) ||
-            (!available && tab.id === 'critique' && isCritiquing)
+            (!available &&
+              tab.id === "report" &&
+              (isWriting || isCritiquing)) ||
+            (!available && tab.id === "critique" && isCritiquing);
 
           return (
             <button
               key={tab.id}
               role="tab"
               aria-selected={activeTab === tab.id}
-              className={`tab-btn ${activeTab === tab.id ? 'active' : ''} ${!available && !isLoading ? 'disabled' : ''}`}
+              className={`tab-btn ${activeTab === tab.id ? "active" : ""} ${!available && !isLoading ? "disabled" : ""}`}
               onClick={() => available && setActiveTab(tab.id)}
               disabled={!available && !isLoading}
             >
@@ -208,17 +263,19 @@ export default function ResultsPanel({ state }: ResultsPanelProps) {
               {tab.label}
               {isLoading && <span className="tab-spinner" />}
             </button>
-          )
+          );
         })}
       </div>
 
       {/* Tab content */}
       <div className="tab-content">
-        {activeTab === 'report' && (
+        {activeTab === "report" && (
           <>
             {state.report ? (
               <div className="prose-report animate-fade-in">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{state.report}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {state.report}
+                </ReactMarkdown>
               </div>
             ) : (
               <ShimmerBlock />
@@ -226,7 +283,7 @@ export default function ResultsPanel({ state }: ResultsPanelProps) {
           </>
         )}
 
-        {activeTab === 'critique' && (
+        {activeTab === "critique" && (
           <>
             {state.feedback ? (
               <div className="animate-fade-in">
@@ -238,7 +295,7 @@ export default function ResultsPanel({ state }: ResultsPanelProps) {
           </>
         )}
 
-        {activeTab === 'sources' && (
+        {activeTab === "sources" && (
           <>
             {state.search_results ? (
               <div className="animate-fade-in">
@@ -313,7 +370,9 @@ export default function ResultsPanel({ state }: ResultsPanelProps) {
         }
 
         @keyframes spin {
-          to { transform: rotate(360deg); }
+          to {
+            transform: rotate(360deg);
+          }
         }
 
         .tab-content {
@@ -326,10 +385,16 @@ export default function ResultsPanel({ state }: ResultsPanelProps) {
         }
 
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0);   }
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
     </div>
-  )
+  );
 }

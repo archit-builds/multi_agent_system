@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
+import { useAuth } from '@clerk/nextjs'
 
 export type StepKey = 'search_results' | 'scraped_content' | 'report' | 'feedback'
 export type StatusKey =
@@ -20,6 +21,7 @@ export interface ResearchState {
   report: string
   feedback: string
   error: string
+  savedId: string   // non-empty when backend confirms the research was saved
 }
 
 const INITIAL: ResearchState = {
@@ -30,11 +32,13 @@ const INITIAL: ResearchState = {
   report: '',
   feedback: '',
   error: '',
+  savedId: '',
 }
 
 export function useResearch() {
   const [state, setState] = useState<ResearchState>(INITIAL)
   const abortRef = useRef<AbortController | null>(null)
+  const { getToken, isSignedIn } = useAuth()
 
   const run = useCallback(async (topic: string) => {
     // Cancel any in-flight request
@@ -44,9 +48,18 @@ export function useResearch() {
     setState({ ...INITIAL, status: 'search_started', message: '🔍 Initialising search…' })
 
     try {
+      // Attach Clerk JWT when the user is signed in; guests send no token
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (isSignedIn) {
+        const token = await getToken()
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+      }
+
       const res = await fetch('/api/research/stream', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ topic }),
         signal: abortRef.current.signal,
       })
@@ -101,6 +114,9 @@ export function useResearch() {
               } else if (event.step === 'done') {
                 next.status = 'done'
                 next.message = event.message ?? 'Complete'
+              } else if (event.step === 'saved') {
+                // Backend confirmed the research was saved to MongoDB
+                next.savedId = event.data
               } else if (event.step === 'error') {
                 next.status = 'error'
                 next.error = event.data
@@ -121,7 +137,7 @@ export function useResearch() {
         error: (err as Error).message ?? 'Unknown error',
       }))
     }
-  }, [])
+  }, [isSignedIn, getToken])
 
   const reset = useCallback(() => {
     abortRef.current?.abort()

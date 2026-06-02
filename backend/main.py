@@ -16,10 +16,20 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Allow the frontend dev server and the production domain.
+# Credentials (Authorization header) require explicit origins — not "*".
+_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://multi-agent-system-roan.vercel.app/"
+    # Add your production frontend URL here, e.g.:
+    # "https://your-app.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=_ALLOWED_ORIGINS,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

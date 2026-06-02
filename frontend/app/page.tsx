@@ -4,36 +4,61 @@ import { useResearch } from './hooks/useResearch'
 import SearchBar from './components/SearchBar'
 import PipelineTracker from './components/PipelineTracker'
 import ResultsPanel from './components/ResultsPanel'
+import { useAuth, SignInButton } from '@clerk/nextjs'
 
 export default function HomePage() {
   const { state, run, reset } = useResearch()
+  const { isSignedIn, isLoaded } = useAuth()
 
   const isLoading = !['idle', 'done', 'error'].includes(state.status)
   const hasResults = !!(state.report || state.feedback || state.search_results)
 
   return (
     <div className="page">
-      {/* Header */}
-      <header className="header">
-        <div className="logo-mark">
-          <span className="logo-diamond">◆</span>
-          <span className="logo-diamond dim">◈</span>
-          <span className="logo-diamond dimmer">◇</span>
-        </div>
-        <div className="header-text">
-          <h1 className="site-title">Research Intelligence</h1>
-          <p className="site-sub">Multi-agent AI pipeline · Search → Read → Write → Critique</p>
-        </div>
-      </header>
 
       {/* Main */}
       <main className="main">
         <div className="container">
 
+          {/* Hero title (below navbar) */}
+          <header className="hero-header">
+            <div className="logo-mark">
+              <span className="logo-diamond">◆</span>
+              <span className="logo-diamond dim">◈</span>
+              <span className="logo-diamond dimmer">◇</span>
+            </div>
+            <div className="header-text">
+              <h1 className="site-title">Research Intelligence</h1>
+              <p className="site-sub">Multi-agent AI pipeline · Search → Read → Write → Critique</p>
+            </div>
+          </header>
+
           {/* Search */}
           <section className="search-section">
             <SearchBar onSearch={run} isLoading={isLoading} onReset={reset} />
           </section>
+
+          {/* Guest sign-in nudge — only shown when auth is loaded and user is a guest */}
+          {isLoaded && !isSignedIn && (
+            <div className="guest-banner">
+              <span className="guest-icon">🔒</span>
+              <span className="guest-text">
+                You can search freely as a guest.{' '}
+                <SignInButton mode="modal">
+                  <button className="guest-cta">Sign in</button>
+                </SignInButton>
+                {' '}to save your research history.
+              </span>
+            </div>
+          )}
+
+          {/* Saved confirmation — shown when backend confirms save */}
+          {state.savedId && (
+            <div className="saved-banner">
+              <span className="saved-icon">✓</span>
+              <span className="saved-text">Research saved to your history</span>
+            </div>
+          )}
 
           {/* Pipeline progress */}
           {state.status !== 'idle' && (
@@ -95,15 +120,12 @@ export default function HomePage() {
           background: var(--bg-base);
         }
 
-        /* ── Header ── */
-        .header {
+        /* ── Hero Header ── */
+        .hero-header {
           display: flex;
           align-items: center;
           gap: 16px;
-          padding: 2rem 2rem 0;
-          max-width: 820px;
-          margin: 0 auto;
-          width: 100%;
+          padding-top: 2rem;
         }
 
         .logo-mark {
@@ -143,7 +165,7 @@ export default function HomePage() {
         /* ── Main ── */
         .main {
           flex: 1;
-          padding: 2rem 1.5rem 3rem;
+          padding: 0 1.5rem 3rem;
         }
 
         .container {
@@ -151,7 +173,7 @@ export default function HomePage() {
           margin: 0 auto;
           display: flex;
           flex-direction: column;
-          gap: 2rem;
+          gap: 1.5rem;
         }
 
         .search-section  { width: 100%; }
@@ -159,6 +181,71 @@ export default function HomePage() {
         .results-section {
           width: 100%;
           animation: fadeUp 0.5s ease;
+        }
+
+        /* ── Guest banner ── */
+        .guest-banner {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 0.65rem 1rem;
+          background: var(--bg-surface);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          font-size: 13px;
+          color: var(--text-secondary);
+          animation: fadeUp 0.4s ease;
+        }
+
+        .guest-icon {
+          font-size: 14px;
+          flex-shrink: 0;
+        }
+
+        .guest-text {
+          line-height: 1.5;
+        }
+
+        .guest-cta {
+          background: none;
+          border: none;
+          color: var(--accent);
+          font-weight: 500;
+          cursor: pointer;
+          font-size: 13px;
+          padding: 0;
+          text-decoration: underline;
+          text-underline-offset: 2px;
+          font-family: var(--font-body);
+        }
+
+        .guest-cta:hover {
+          opacity: 0.75;
+        }
+
+        /* ── Saved banner ── */
+        .saved-banner {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 0.65rem 1rem;
+          background: var(--accent-light);
+          border: 1px solid var(--accent-mid);
+          border-radius: 10px;
+          font-size: 13px;
+          color: var(--text-accent);
+          animation: fadeUp 0.4s ease;
+        }
+
+        .saved-icon {
+          font-size: 14px;
+          color: var(--accent);
+          font-weight: 600;
+          flex-shrink: 0;
+        }
+
+        .saved-text {
+          font-weight: 500;
         }
 
         /* ── Error ── */

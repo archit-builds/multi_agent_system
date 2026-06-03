@@ -1,20 +1,35 @@
 'use client'
 
 import { useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 export default function Navbar() {
   const { isSignedIn, isLoaded } = useAuth()
+  const pathname = usePathname()
 
   return (
     <nav className="app-nav">
       <div className="nav-inner">
-        <span className="nav-brand">
+        {/* Brand */}
+        <Link href="/" className="nav-brand">
           <span className="nav-diamond">◆</span>
           <span className="nav-brand-text">Research Intelligence</span>
-        </span>
+        </Link>
 
+        {/* Right side */}
         <div className="nav-actions">
-          {/* Show nothing until Clerk has hydrated */}
+          {/* History link — only for signed-in users */}
+          {isLoaded && isSignedIn && (
+            <Link
+              href="/history"
+              className={`nav-link ${pathname.startsWith('/history') ? 'nav-link-active' : ''}`}
+            >
+              History
+            </Link>
+          )}
+
+          {/* Auth buttons */}
           {isLoaded && !isSignedIn && (
             <>
               <SignInButton mode="modal">
@@ -25,6 +40,7 @@ export default function Navbar() {
               </SignUpButton>
             </>
           )}
+
           {isLoaded && isSignedIn && (
             <UserButton />
           )}
@@ -55,6 +71,7 @@ export default function Navbar() {
           display: flex;
           align-items: center;
           gap: 8px;
+          text-decoration: none;
         }
 
         .nav-diamond {
@@ -68,15 +85,43 @@ export default function Navbar() {
           font-weight: 400;
           color: var(--text-primary);
           letter-spacing: 0.01em;
+          transition: color 0.15s;
+        }
+
+        .nav-brand:hover .nav-brand-text {
+          color: var(--accent);
         }
 
         .nav-actions {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
           min-height: 36px;
         }
 
+        /* History link */
+        .nav-link {
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--text-secondary);
+          text-decoration: none;
+          padding: 5px 10px;
+          border-radius: 7px;
+          transition: all 0.15s;
+          letter-spacing: 0.01em;
+        }
+
+        .nav-link:hover {
+          color: var(--accent);
+          background: var(--accent-light);
+        }
+
+        .nav-link-active {
+          color: var(--accent);
+          background: var(--accent-light);
+        }
+
+        /* Auth buttons */
         .nav-btn {
           font-size: 13px;
           font-weight: 500;

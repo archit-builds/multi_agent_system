@@ -1,20 +1,23 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 /**
- * Public routes — accessible to guests without signing in.
+ * Public routes — accessible without a Clerk session cookie.
  *
- * - "/"               : home page (guests can search freely)
- * - "/sign-in(.*)"    : Clerk sign-in pages
- * - "/sign-up(.*)"    : Clerk sign-up pages
- * - "/api/research(.*)" : research stream (backend handles guest vs user logic)
+ * IMPORTANT: Next.js middleware runs BEFORE rewrites. All /api/* routes
+ * are proxied to FastAPI which handles its own JWT auth via Bearer token.
+ * Clerk middleware must NOT intercept them — it uses cookies, not Bearer
+ * tokens, so it would block every authenticated API call with a 404/redirect.
  *
- * All other routes (e.g. /dashboard, /api/history) remain protected.
+ * Page-level protection:
+ * - "/history" and "/history/:id" are protected — guests are redirected to sign-in
+ *
+ * API-level protection is handled entirely by FastAPI (get_current_user).
  */
 const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
-  "/api/research(.*)",
+  "/api/(.*)",       // ALL API routes — FastAPI handles auth internally
 ]);
 
 export default clerkMiddleware(async (auth, request) => {

@@ -1,0 +1,34 @@
+name: Keep Render Backend Alive
+
+# Render free tier spins down after 15 min of inactivity.
+# This workflow pings the /health endpoint every 10 minutes to prevent that.
+
+on:
+  schedule:
+    # Every 10 minutes, 24/7
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allow manual trigger from GitHub Actions UI
+
+jobs:
+  ping:
+    name: Ping backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Ping /health
+        run: |
+          echo "Pinging backend at $(date -u)"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 30 \
+            https://multi-agent-system-u7hg.onrender.com/health)
+
+          echo "Response status: $STATUS"
+
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ Backend is alive"
+          else
+            echo "⚠️ Backend returned $STATUS — it may be cold-starting"
+            # Don't fail the workflow — a non-200 just means it was waking up
+            # The next ping in 10 min will find it warm
+          fi

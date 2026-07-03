@@ -55,32 +55,41 @@ function layoutNodes(nodes: GraphNode[]): GraphNode[] {
   const totalW   = Math.max((nSources - 1) * spacing, 0)
   const startX   = 340 - totalW / 2
 
-  let agentIndex = 0
+  let unknownAgentIndex = 0
 
   return nodes.map(node => {
     if (node.x !== undefined) return node // already positioned
 
     let x = 340
-    let y = LAYER_Y[node.type] ?? 300
+    let y = 300
 
     if (node.type === 'topic') {
-      x = 340; y = 60
-    } else if (node.type === 'agent') {
-      // Stack agents vertically with separation
-      const agentOrder = ['search-agent', 'reader-agent', 'writer', 'critic']
-      const idx = agentOrder.indexOf(node.id)
-      x = 340
-      y = 180 + (idx >= 0 ? idx : agentIndex++) * 130
+      y = 60
+    } else if (node.id === 'search-agent') {
+      y = 160
     } else if (node.id.startsWith('src-')) {
       const idx = sources.findIndex(s => s.id === node.id)
       x = startX + idx * spacing
-      y = LAYER_Y.source
+      y = 260
+    } else if (node.id === 'reader-agent') {
+      y = 360
     } else if (node.id === 'scraped') {
-      x = 340; y = LAYER_Y.source + 80
-    } else if (node.type === 'output') {
-      x = 340; y = LAYER_Y.output
-    } else if (node.type === 'score') {
-      x = 340; y = LAYER_Y.score
+      y = 460
+    } else if (node.id === 'writer') {
+      y = 560
+    } else if (node.id === 'report-node') {
+      y = 660
+    } else if (node.id === 'critic') {
+      y = 760
+    } else if (node.id === 'score-node') {
+      y = 860
+    } else {
+      // Fallback for any unknown nodes
+      if (node.type === 'agent') {
+        y = 960 + (unknownAgentIndex++) * 100
+      } else {
+        y = 1060
+      }
     }
 
     return { ...node, x, y }
@@ -230,8 +239,14 @@ function AnimatedEdge({ edge, nodes }: { edge: GraphEdge; nodes: GraphNode[] }) 
   const y2 = (to.y  ?? 200) - 20
 
   // Curved path
-  const cx = (x1 + x2) / 2
+  let cx = (x1 + x2) / 2
   const cy = (y1 + y2) / 2
+  
+  // Curve edges that jump a layer vertically so they don't intersect intermediate nodes
+  if (Math.abs(x1 - x2) < 10 && Math.abs(y2 - y1) > 150) {
+    cx = x1 + 120
+  }
+
   const d  = `M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`
 
   return (
@@ -241,8 +256,8 @@ function AnimatedEdge({ edge, nodes }: { edge: GraphEdge; nodes: GraphNode[] }) 
         fill="none"
         stroke="#cfc8be"
         strokeWidth={1.5}
-        strokeDasharray="200"
-        strokeDashoffset="200"
+        strokeDasharray="400"
+        strokeDashoffset="400"
         style={{ animation: 'drawEdge 0.5s ease forwards' }}
       />
       {/* Arrow head */}

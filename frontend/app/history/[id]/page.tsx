@@ -1,6 +1,6 @@
 'use client'
 
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useResearchDetail } from '../../hooks/useHistory'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -67,6 +67,7 @@ export default function ResearchDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { entry, loading, error } = useResearchDetail(id)
   const [activeTab, setActiveTab] = useState<TabId>('report')
+  const router = useRouter()
 
   return (
     <div className="page">
@@ -87,15 +88,15 @@ export default function ResearchDetailPage() {
           {!loading && error && (
             <div className="error-card">
               <span>⚠ {error}</span>
-              <Link href="/history" className="back-link">← Back to history</Link>
+              <button onClick={() => router.back()} className="back-link">← Go back</button>
             </div>
           )}
 
           {/* Content */}
           {!loading && !error && entry && (
             <>
-              {/* Back + header */}
-              <Link href="/history" className="back-link">← Research History</Link>
+              {/* Back */}
+              <button onClick={() => router.back()} className="back-link">← Back</button>
 
               <header className="research-header">
                 <div className="header-top">
@@ -189,7 +190,7 @@ export default function ResearchDetailPage() {
         .skel-meta  { height: 14px; width: 40%;   border-radius: 6px; }
         .skel-body  { height: 300px; width: 100%; border-radius: 12px; margin-top: 1rem; }
 
-        /* ── Back link ── */
+        /* ── Back link/button ── */
         .back-link {
           font-size: 12px;
           color: var(--text-muted);
@@ -197,6 +198,10 @@ export default function ResearchDetailPage() {
           font-family: var(--font-mono);
           letter-spacing: 0.03em;
           transition: color 0.15s;
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
         }
         .back-link:hover { color: var(--accent); }
 

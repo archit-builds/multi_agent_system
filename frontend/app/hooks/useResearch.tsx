@@ -2,37 +2,31 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { useAuth } from '@clerk/nextjs'
+import { GraphNode, GraphEdge } from "../components/ResearchGraph"
 
 export type StepKey = 'search_results' | 'scraped_content' | 'report' | 'feedback'
 export type StatusKey =
-  | 'idle'
-  | 'search_started'
-  | 'reading_started'
-  | 'writing_started'
-  | 'critiquing_started'
-  | 'done'
-  | 'error'
+  | 'idle' | 'search_started' | 'reading_started'
+  | 'writing_started' | 'critiquing_started' | 'done' | 'error'
 
 export interface ResearchState {
-  status: StatusKey
-  message: string
-  search_results: string
+  status:          StatusKey
+  message:         string
+  search_results:  string
   scraped_content: string
-  report: string
-  feedback: string
-  error: string
-  savedId: string   // non-empty when backend confirms the research was saved
+  report:          string
+  feedback:        string
+  error:           string
+  // Graph state
+  nodes: GraphNode[]
+  edges: GraphEdge[]
 }
 
 const INITIAL: ResearchState = {
-  status: 'idle',
-  message: '',
-  search_results: '',
-  scraped_content: '',
-  report: '',
-  feedback: '',
-  error: '',
-  savedId: '',
+  status: 'idle', message: '',
+  search_results: '', scraped_content: '',
+  report: '', feedback: '', error: '',
+  nodes: [], edges: [],
 }
 
 export function useResearch() {
@@ -41,22 +35,17 @@ export function useResearch() {
   const { getToken, isSignedIn } = useAuth()
 
   const run = useCallback(async (topic: string) => {
-    // Cancel any in-flight request
     abortRef.current?.abort()
     abortRef.current = new AbortController()
 
-    setState({ ...INITIAL, status: 'search_started', message: '🔍 Initialising search…' })
+    setState({ ...INITIAL, status: 'search_started', message: '🔍 Initialising…' })
 
     try {
-      // Attach Clerk JWT when the user is signed in; guests send no token
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       if (isSignedIn) {
         const token = await getToken()
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`
-        }
+        if (token) headers['Authorization'] = `Bearer ${token}`
       }
-
       const res = await fetch('/api/research/stream', {
         method: 'POST',
         headers,
@@ -64,14 +53,11 @@ export function useResearch() {
         signal: abortRef.current.signal,
       })
 
-      if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || `HTTP ${res.status}`)
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
-      const reader = res.body!.getReader()
+      const reader  = res.body!.getReader()
       const decoder = new TextDecoder()
-      let buffer = ''
+      let buffer    = ''
 
       while (true) {
         const { value, done } = await reader.read()
@@ -87,55 +73,76 @@ export function useResearch() {
           if (!raw) continue
 
           try {
-            const event = JSON.parse(raw) as {
-              step: string
-              data: string
-              message?: string
-            }
+            const event = JSON.parse(raw)
 
-            setState((prev) => {
+            setState(prev => {
               const next = { ...prev }
 
-              if (event.step === 'status') {
-                next.status = event.data as StatusKey
-                next.message = event.message ?? ''
-              } else if (event.step === 'search_results') {
-                next.search_results = event.data
-                next.message = event.message ?? ''
-              } else if (event.step === 'scraped_content') {
-                next.scraped_content = event.data
-                next.message = event.message ?? ''
-              } else if (event.step === 'report') {
-                next.report = event.data
-                next.message = event.message ?? ''
-              } else if (event.step === 'feedback') {
-                next.feedback = event.data
-                next.message = event.message ?? ''
-              } else if (event.step === 'done') {
-                next.status = 'done'
-                next.message = event.message ?? 'Complete'
-              } else if (event.step === 'saved') {
-                // Backend confirmed the research was saved to MongoDB
-                next.savedId = event.data
-              } else if (event.step === 'error') {
-                next.status = 'error'
-                next.error = event.data
+              switch (event.step) {
+                case 'status':
+                  next.status  = event.data as StatusKey
+                  next.message = event.message ?? ''
+                  break
+
+                case 'search_results':
+                  next.search_results = event.data
+                  next.message        = event.message ?? ''
+                  break
+
+                case 'scraped_content':
+                  next.scraped_content = event.data
+                  next.message         = event.message ?? ''
+                  break
+
+                case 'report':
+                  next.report  = event.data
+                  next.message = event.message ?? ''
+                  break
+
+                case 'feedback':
+                  next.feedback = event.data
+                  next.message  = event.message ?? ''
+                  break
+
+                case 'done':
+                  next.status  = 'done'
+                  next.message = event.message ?? 'Complete'
+                  break
+
+                case 'error':
+                  next.status = 'error'
+                  next.error  = event.data
+                  break
+
+                // ── Graph events ──────────────────────────────
+                case 'node_add':
+                  next.nodes = [...prev.nodes, event.node as GraphNode]
+                  break
+
+                case 'node_update': {
+                  next.nodes = prev.nodes.map(n =>
+                    n.id === event.id
+                      ? { ...n, status: event.status, meta: { ...n.meta, ...event.meta } }
+                      : n
+                  )
+                  break
+                }
+
+                case 'edge_add':
+                  next.edges = [...prev.edges, event.edge as GraphEdge]
+                  break
               }
 
               return next
             })
           } catch {
-            // malformed JSON line — ignore
+            // malformed line — ignore
           }
         }
       }
     } catch (err: unknown) {
       if ((err as Error).name === 'AbortError') return
-      setState((prev) => ({
-        ...prev,
-        status: 'error',
-        error: (err as Error).message ?? 'Unknown error',
-      }))
+      setState(prev => ({ ...prev, status: 'error', error: (err as Error).message }))
     }
   }, [isSignedIn, getToken])
 

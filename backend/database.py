@@ -42,7 +42,9 @@ MONGODB_URL = MONGODB_URL.strip().strip("'").strip('"')
 # The actual database name in MongoDB Atlas (case-sensitive — must match exactly)
 DB_NAME = "Cluster0"
 
-client = AsyncIOMotorClient(MONGODB_URL)
+import certifi
+
+client = AsyncIOMotorClient(MONGODB_URL, tlsCAFile=certifi.where())
 db = client[DB_NAME]
 
 researches = db["researches"]

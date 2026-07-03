@@ -11,10 +11,17 @@ tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
 
 @tool
-def tavily_search(query: str) -> list:
-    """Search the web using Tavily and return the top 5 results."""
+def search_web(query: str) -> list:
+    """Search the web for recent and reliable information and return the top 5 results."""
     response = tavily_client.search(query=query, max_results=5)
-    return response.get("results", [])
+    results = response.get("results", [])
+    # Return only minimal information to prevent blowing up the LLM context window
+    cleaned = []
+    for r in results:
+        content = r.get("content", "")
+        if content:
+            cleaned.append({"url": r.get("url"), "content": content[:800]})
+    return cleaned
 
 
 @tool

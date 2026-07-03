@@ -24,7 +24,7 @@ The project is structured as a full-stack monorepo featuring a **Python (FastAPI
 The backend acts as the orchestration engine for the AI agents, built around modern asynchronous Python and LangChain.
 
 - **API Framework:** FastAPI, featuring Server-Sent Events (SSE) via `StreamingResponse` to push pipeline status updates to the client in real-time.
-- **AI/LLM Engine:** LangChain initialized with **Groq** (`llama-3.3-70b-versatile`) for extremely fast, high-quality reasoning.
+- **AI/LLM Engine:** LangChain initialized with **Groq** (`openai/gpt-oss-120b`) for extremely fast, high-quality reasoning.
 - **Custom Tools:**
   - `tavily_search`: Uses the Tavily API to fetch clean, AI-optimized web search results.
   - `scrape_webpage`: Uses `requests` and `BeautifulSoup4` to download and clean HTML text from the target URLs.

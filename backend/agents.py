@@ -2,7 +2,7 @@ from langchain.agents import create_agent
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from tools import tavily_search, scrape_webpage
+from tools import search_web, scrape_webpage
 from dotenv import load_dotenv
 from langchain_core.rate_limiters import InMemoryRateLimiter
 
@@ -12,28 +12,51 @@ rate_limiter = InMemoryRateLimiter(
     requests_per_second=0.15,   # ~9 RPM, just under the 10 RPM free limit
     check_every_n_seconds=0.5,
 )
-# Initialize the Google GenAI model
-llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+
+# ── Models ────────────────────────────────────────────────────────────────────
+# Tool-calling agents need the fine-tuned tool-use model to avoid malformed
+# function-call JSON (error 400 tool_use_failed) from the versatile model.
+tool_llm = ChatGroq(
+    model="llama-3.1-8b-instant",
     temperature=0,
     max_retries=3,
+    rate_limiter=rate_limiter,
+)
+
+# Writer / Critic chains don't call tools — versatile model is fine here.
+llm = ChatGroq(
+    model="openai/gpt-oss-120b",
+    temperature=0,
+    max_retries=3,
+    rate_limiter=rate_limiter,
 )
 
 def build_search_agent():
     return create_agent(
-        model=llm,
-        tools=[tavily_search],
-        system_prompt="You are a helpful research agent. Use the tavily_search tool to find recent and reliable information. Once you have found enough information, provide a final synthesized summary of the search results and do not call the tool again."
+        model=tool_llm,
+        tools=[search_web],
+        system_prompt=(
+            "You are a helpful research agent. You MUST use the `search_web` tool to find "
+            "recent and reliable information. Do NOT hallucinate or use any other tools (like brave_search). "
+            "Once you have found enough information, provide a final synthesized summary "
+            "of the search results and do not call the tool again."
+        )
     )
 
 def build_reader_agent():
     return create_agent(
-        model=llm,
+        model=tool_llm,
         tools=[scrape_webpage],
-        system_prompt="You are a reading agent. Use the scrape_webpage tool to extract content from the given URL. Return the scraped text and do not call the tool repeatedly once you have the content. VERY IMPORTANT: Carefully extract the URL from the search results exactly as it is written. Do not include trailing parentheses, quotes, or punctuation inside the URL."
+        system_prompt=(
+            "You are a reading agent. Use the scrape_webpage tool to extract content "
+            "from the given URL. Return the scraped text and do not call the tool "
+            "repeatedly once you have the content. VERY IMPORTANT: Carefully extract "
+            "the URL from the search results exactly as it is written. Do not include "
+            "trailing parentheses, quotes, or punctuation inside the URL."
+        )
     )
 
-#writer chain 
+# ── Writer chain ──────────────────────────────────────────────────────────────
 
 writer_prompt = ChatPromptTemplate.from_messages([
     ("system", "You are an expert research writer. Write clear, structured and insightful reports."),
@@ -55,7 +78,7 @@ Be detailed, factual and professional."""),
 
 writer_chain = writer_prompt | llm | StrOutputParser()
 
-#critic_chain 
+# ── Critic chain ──────────────────────────────────────────────────────────────
 
 critic_prompt = ChatPromptTemplate.from_messages([
      ("system", "You are a sharp and constructive research critic. Be honest and specific."),

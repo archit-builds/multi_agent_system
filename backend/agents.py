@@ -17,7 +17,7 @@ rate_limiter = InMemoryRateLimiter(
 # Tool-calling agents need the fine-tuned tool-use model to avoid malformed
 # function-call JSON (error 400 tool_use_failed) from the versatile model.
 tool_llm = ChatGroq(
-    model="llama-3.1-8b-instant",
+    model="llama-3.3-70b-versatile",
     temperature=0,
     max_retries=3,
     rate_limiter=rate_limiter,
@@ -25,7 +25,7 @@ tool_llm = ChatGroq(
 
 # Writer / Critic chains don't call tools — versatile model is fine here.
 llm = ChatGroq(
-    model="openai/gpt-oss-120b",
+    model="llama-3.3-70b-versatile",
     temperature=0,
     max_retries=3,
     rate_limiter=rate_limiter,

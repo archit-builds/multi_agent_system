@@ -9,7 +9,7 @@ interface ResultsPanelProps {
   state: ResearchState;
 }
 
-type TabId = "report" | "critique" | "sources";
+type TabId = "report" | "critique" ;
 
 interface Tab {
   id: TabId;
@@ -26,12 +26,7 @@ const TABS: Tab[] = [
     icon: "◈",
     available: (s) => !!s.feedback,
   },
-  {
-    id: "sources",
-    label: "Sources",
-    icon: "◎",
-    available: (s) => !!s.search_results,
-  },
+  
 ];
 
 function ScoreBadge({ text }: { text: string }) {
@@ -295,17 +290,7 @@ export default function ResultsPanel({ state }: ResultsPanelProps) {
           </>
         )}
 
-        {activeTab === "sources" && (
-          <>
-            {state.search_results ? (
-              <div className="animate-fade-in">
-                <SourcesView raw={state.search_results} />
-              </div>
-            ) : (
-              <ShimmerBlock />
-            )}
-          </>
-        )}
+    
       </div>
 
       <style jsx>{`
